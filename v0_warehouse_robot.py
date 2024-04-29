@@ -25,10 +25,13 @@ class WarehouseRobot:
         self.reset()
 
     def reset(self, seed=None):
-        self.robot_pos = [0, 0]
+        self.robot_pos = [-1, -1]
 
         random.seed(seed)
-        self.target_pos = [random.randint(1, self.grid_rows - 1), random.randint(1, self.grid_cols - 1)]
+        self.target_pos = [random.randint(0, self.grid_rows - 1), random.randint(0, self.grid_cols - 1)]
+
+        while self.robot_pos == [-1, -1] or self.robot_pos == self.target_pos:
+            self.robot_pos = [random.randint(0, self.grid_rows - 1), random.randint(0, self.grid_cols - 1)]
 
     def render(self):
         for r in range(self.grid_rows):
