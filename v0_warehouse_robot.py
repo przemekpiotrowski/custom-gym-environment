@@ -43,7 +43,29 @@ class WarehouseRobot:
             print()
         print()
 
+    def perform_action(self, robot_action: RobotAction) -> bool:
+        if robot_action == RobotAction.LEFT:
+            if self.robot_pos[1] > 0:
+                self.robot_pos[1] -= 1
+        elif robot_action == RobotAction.RIGHT:
+            if self.robot_pos[1] < self.grid_cols - 1:
+                self.robot_pos[1] += 1
+        elif robot_action == RobotAction.UP:
+            if self.robot_pos[0] > 0:
+                self.robot_pos[0] -= 1
+        elif robot_action == RobotAction.DOWN:
+            if self.robot_pos[0] < self.grid_rows - 1:
+                self.robot_pos[0] += 1
+
+        return self.robot_pos == self.target_pos
+
 
 if __name__ == "__main__":
-    wr = WarehouseRobot()
+    wr = WarehouseRobot(grid_rows=10, grid_cols=10)
     wr.render()
+
+    for i in range(5):
+        rand_action = random.choice(list(RobotAction))
+        print(rand_action)
+        wr.perform_action(rand_action)
+        wr.render()
