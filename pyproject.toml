@@ -1,2 +1,5 @@
+[project]
+dependencies = ["gymnasium"]
+
 [tool.ruff]
 line-length = 120
