@@ -17,10 +17,11 @@ class WarehouseRobotEnv(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 1}
 
     def __init__(self, grid_rows=4, grid_cols=5, render_mode=None):
-        self.action_space = spaces.Discrete(len(wr.RobotAction))
-
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
+        self.render_mode = render_mode
+
+        self.action_space = spaces.Discrete(len(wr.RobotAction))
         self.observation_space = spaces.Box(
             low=0,
             high=np.array([self.grid_rows - 1, self.grid_cols - 1, self.grid_rows - 1, self.grid_cols - 1]),
@@ -29,8 +30,6 @@ class WarehouseRobotEnv(gym.Env):
         )
 
         self.wr = wr.WarehouseRobot(grid_rows=grid_rows, grid_cols=grid_cols)
-
-        self.render_mode = render_mode
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -48,26 +47,26 @@ class WarehouseRobotEnv(gym.Env):
         self.wr.render()
 
     def step(self, action):
-        target_reached = self.wr.perform_action(wr.RobotAction(action))
-
         reward = 0
         terminated = False
+        truncated = False
+        obs = np.concatenate((self.wr.robot_pos, self.wr.target_pos), dtype=np.int32)
+        info = {}
+
+        target_reached = self.wr.perform_action(wr.RobotAction(action))
         if target_reached:
             reward = 1
             terminated = True
-
-        obs = np.concatenate((self.wr.robot_pos, self.wr.target_pos), dtype=np.int32)
-        info = {}
 
         if self.render_mode == "human":
             print(wr.RobotAction(action))
             self.render()
 
-        return obs, reward, terminated, False, info
+        return obs, reward, terminated, truncated, info
 
 
 if __name__ == "__main__":
-    env = gym.make("warehouse-robot-v0", render_mode="human")
+    env = gym.make("warehouse-robot-v0", grid_rows=10, grid_cols=10, render_mode="human")
     env = TimeLimit(env, max_episode_steps=20)
 
     # check_env(env.unwrapped)
