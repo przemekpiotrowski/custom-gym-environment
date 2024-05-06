@@ -1,13 +1,19 @@
 import gymnasium as gym
+from gymnasium.wrappers import TimeLimit
+
 import numpy as np
 import pickle
 import random
 import matplotlib.pyplot as plt
+
 import v0_warehouse_robot_env  # noqa
 
 
-def run_q(episodes, is_training=True, render=False):
-    env = gym.make("warehouse-robot-v0", render_mode="human" if render else None)
+def run_q(episodes, is_training=True, grid_rows=4, grid_cols=5, render=False):
+    env = gym.make(
+        "warehouse-robot-v0", grid_rows=grid_rows, grid_cols=grid_cols, render_mode="human" if render else None
+    )
+    env = TimeLimit(env, max_episode_steps=100)
 
     if is_training:
         q = np.zeros(
@@ -35,15 +41,15 @@ def run_q(episodes, is_training=True, render=False):
         print(f"Episode {i}")
 
         state, _ = env.reset()
-        terminated = False
-        while not terminated:
+        terminated = truncated = False
+        while not terminated and not truncated:
             if is_training and random.random() < epsilon:
                 action = env.action_space.sample()
             else:
                 q_state_idx = tuple(state)
                 action = np.argmax(q[q_state_idx])
 
-            new_state, reward, terminated, _, _ = env.step(action)
+            new_state, reward, terminated, truncated, _ = env.step(action)
 
             q_state_action_idx = tuple(state) + (action,)
             q_new_state_idx = tuple(new_state)
@@ -56,7 +62,7 @@ def run_q(episodes, is_training=True, render=False):
             state = new_state
 
             step_count += 1
-            if terminated:
+            if terminated or truncated:
                 steps_per_episode[i] = step_count
                 step_count = 0
 
@@ -78,5 +84,7 @@ def run_q(episodes, is_training=True, render=False):
 
 
 if __name__ == "__main__":
-    run_q(2000, is_training=True, render=False)
-    run_q(1, is_training=False, render=True)
+    GRID_ROWS = 5
+    GRID_COLS = 6
+    run_q(2000, is_training=True, grid_rows=GRID_ROWS, grid_cols=GRID_COLS, render=False)
+    run_q(1, is_training=False, grid_rows=GRID_ROWS, grid_cols=GRID_COLS, render=True)

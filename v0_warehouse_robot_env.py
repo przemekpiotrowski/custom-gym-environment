@@ -4,8 +4,9 @@ from gymnasium.utils.env_checker import check_env  # noqa
 from gymnasium import spaces
 from gymnasium.wrappers import TimeLimit
 
-import v0_warehouse_robot as wr
 import numpy as np
+
+import v0_warehouse_robot as wr
 
 register(
     id="warehouse-robot-v0",
@@ -47,7 +48,7 @@ class WarehouseRobotEnv(gym.Env):
         self.wr.render()
 
     def step(self, action):
-        reward = 0
+        reward = -1
         terminated = False
         truncated = False
         obs = np.concatenate((self.wr.robot_pos, self.wr.target_pos), dtype=np.int32)
@@ -55,7 +56,7 @@ class WarehouseRobotEnv(gym.Env):
 
         target_reached = self.wr.perform_action(wr.RobotAction(action))
         if target_reached:
-            reward = 1
+            reward = 20
             terminated = True
 
         if self.render_mode == "human":
