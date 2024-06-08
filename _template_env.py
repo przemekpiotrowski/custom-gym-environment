@@ -47,4 +47,13 @@ if __name__ == "__main__":
     env = gym.make("template-v0", render_mode="human")
     env = TimeLimit(env, max_episode_steps=5)
 
-    check_env(env.unwrapped)
+    # check_env(env.unwrapped)
+
+    env.reset()
+    terminated = truncated = False
+    while not terminated and not truncated:
+        print(".", end="")
+        rand_action = env.action_space.sample()
+        _, _, terminated, truncated, _ = env.step(rand_action)
+
+    print(f"{terminated=}, {truncated=}")
