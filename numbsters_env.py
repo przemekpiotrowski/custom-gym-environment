@@ -6,6 +6,7 @@ from gymnasium.wrappers import TimeLimit
 
 import numpy as np
 
+import src.numbsters.game as numbsters
 
 register(
     id="numbsters-v0",
@@ -20,18 +21,27 @@ class NumbstersEnv(gym.Env):
         self.render_mode = render_mode
 
         self.action_space = spaces.Discrete(3)
-        self.observation_space = spaces.Box(0, 1, shape=(2,), dtype=np.uint8)
+        self.observation_space = spaces.Box(
+            low=np.array([1, 1, 1, 1, 1, 1, 1]),
+            high=np.array([18, 18, 18, 18, 18, 18, 18]),
+            shape=(7,),
+            dtype=np.uint8,
+        )
+
+        self.game = numbsters.Game()
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        obs = np.array([0, 1], dtype=np.uint8)
+        self.game.setup(seed=seed)
+
+        obs = np.array(self.game.stack, dtype=np.uint8)
         info = {}
 
         return obs, info
 
     def step(self, action):
-        obs = np.array([0, 1], dtype=np.uint8)
+        obs = np.array(self.game.stack, dtype=np.uint8)
         reward = 0
         terminated = False
         truncated = False
@@ -47,13 +57,15 @@ if __name__ == "__main__":
     env = gym.make("numbsters-v0", render_mode="human")
     env = TimeLimit(env, max_episode_steps=5)
 
-    check_env(env.unwrapped)
+    # check_env(env.unwrapped)
 
-    env.reset()
+    obs, _ = env.reset()
+    print(f"{obs=}")
     terminated = truncated = False
     while not terminated and not truncated:
-        print(".", end="")
+        # print(".", end="")
         rand_action = env.action_space.sample()
-        _, _, terminated, truncated, _ = env.step(rand_action)
+        obs, _, terminated, truncated, _ = env.step(rand_action)
+        print(f"{obs=}")
 
     print(f"{terminated=}, {truncated=}")
