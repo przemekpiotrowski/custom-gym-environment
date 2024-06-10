@@ -7,6 +7,7 @@ from gymnasium.wrappers import TimeLimit
 import numpy as np
 
 import src.numbsters.game as numbsters
+from src.numbsters.cards import create_deck
 
 register(
     id="numbsters-v0",
@@ -28,12 +29,13 @@ class NumbstersEnv(gym.Env):
             dtype=np.uint8,
         )
 
-        self.game = numbsters.Game()
+        self.game = None
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        self.game.setup(seed=seed)
+        self.game = numbsters.Game(deck=create_deck(seed=seed))
+        self.game.setup()
 
         obs = np.array(self.game.stack, dtype=np.uint8)
         info = {}
