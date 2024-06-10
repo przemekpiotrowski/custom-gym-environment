@@ -44,6 +44,14 @@ class NumbstersEnv(gym.Env):
         obs = np.array(self.game.stack, dtype=np.uint8)
         reward = 0
         terminated = False
+
+        if self.game.ends():
+            terminated = True
+            if self.game.winning_condition():
+                reward = 10
+            else:
+                reward = -10
+
         truncated = False
         info = {}
 
