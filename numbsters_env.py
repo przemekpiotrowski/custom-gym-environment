@@ -21,17 +21,18 @@ class NumbstersEnv(gym.Env):
     def __init__(self, render_mode=None):
         self.render_mode = render_mode
 
-        self.game_deck = ["1", "2", "3", "8"]
+        self.game_deck = create_deck()
+        self.game_stack_len = min(len(self.game_deck), 8)
         self.game_actions = []
-        for pos_from in range(len(self.game_deck)):
-            for pos_to in range(len(self.game_deck) + 1):
+        for pos_from in range(self.game_stack_len):
+            for pos_to in range(self.game_stack_len + 1):
                 self.game_actions.append(f"move_{pos_from+1}_{pos_to}")
 
         self.action_space = spaces.Discrete(len(self.game_actions))
         self.observation_space = spaces.Box(
-            low=np.ones(len(self.game_deck), dtype=np.uint8),
-            high=np.ones(len(self.game_deck), dtype=np.uint8) * 18,
-            shape=(len(self.game_deck),),
+            low=np.ones(self.game_stack_len, dtype=np.uint8),
+            high=np.ones(self.game_stack_len, dtype=np.uint8) * 18,
+            shape=(self.game_stack_len,),
             dtype=np.uint8,
         )
 
@@ -42,6 +43,7 @@ class NumbstersEnv(gym.Env):
 
         self.game = numbsters.Game(deck=self.game_deck.copy())
         self.game.setup()
+        self.game.draw()
 
         obs = np.array(self.game.stack, dtype=np.uint8)
         info = {}
@@ -60,13 +62,14 @@ class NumbstersEnv(gym.Env):
         if game_action_ok:
             debug.append("action ok")
 
+            no_eating = False
             if self.game.eat():
                 debug.append("eating ok")
             else:
                 debug.append("no eating")
-                reward = -1
+                no_eating = True
 
-            if self.game.ends():
+            if no_eating or self.game.ends():
                 debug.append("game ends")
 
                 terminated = True
@@ -74,6 +77,9 @@ class NumbstersEnv(gym.Env):
                     reward = 10
                 else:
                     reward = -10
+            else:
+                debug.append("game continues")
+                self.game.draw()
         else:
             debug.append("invalid action")
             reward = -1
