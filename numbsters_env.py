@@ -27,6 +27,9 @@ class NumbstersEnv(gym.Env):
         for pos_from in range(self.game_stack_len):
             for pos_to in range(self.game_stack_len + 1):
                 self.game_actions.append(f"move_{pos_from+1}_{pos_to}")
+        for pos_1 in range(self.game_stack_len):
+            for pos_2 in range(self.game_stack_len):
+                self.game_actions.append(f"swap_{pos_1+1}_{pos_2+1}")
 
         self.action_space = spaces.Discrete(len(self.game_actions))
         self.observation_space = spaces.Box(
