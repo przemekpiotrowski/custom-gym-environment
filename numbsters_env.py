@@ -7,7 +7,9 @@ from gymnasium.wrappers import TimeLimit
 import numpy as np
 
 import src.numbsters.game as numbsters
+
 from src.numbsters.cards import create_deck
+from src.numbsters.observations_space import generate_os0, stack2os
 
 register(
     id="numbsters-v0",
@@ -30,14 +32,10 @@ class NumbstersEnv(gym.Env):
         for pos_1 in range(self.game_stack_len):
             for pos_2 in range(self.game_stack_len):
                 self.game_actions.append(f"swap_{pos_1+1}_{pos_2+1}")
-
         self.action_space = spaces.Discrete(len(self.game_actions))
-        self.observation_space = spaces.Box(
-            low=np.ones(self.game_stack_len, dtype=np.uint8),
-            high=np.ones(self.game_stack_len, dtype=np.uint8) * 18,
-            shape=(self.game_stack_len,),
-            dtype=np.uint8,
-        )
+
+        self.game_observations = generate_os0(self.game_deck)
+        self.observation_space = spaces.Discrete(len(self.game_observations))
 
         self.game = None
 
@@ -48,7 +46,7 @@ class NumbstersEnv(gym.Env):
         self.game.setup()
         self.game.draw()
 
-        obs = np.array(self.game.stack, dtype=np.uint8)
+        obs = self.game_observations.index(stack2os(self.game.stack, self.game_stack_len))
         info = {}
 
         return obs, info
@@ -88,7 +86,7 @@ class NumbstersEnv(gym.Env):
             reward = -1
 
         info = {"debug": debug}
-        obs = np.array(self.game.stack, dtype=np.uint8)
+        obs = self.game_observations.index(stack2os(self.game.stack, self.game_stack_len))
 
         return obs, reward, terminated, truncated, info
 
@@ -104,13 +102,13 @@ if __name__ == "__main__":
     print("*** env check end ***")
 
     obs, _ = env.reset()
-    print(obs)
+    print(env.unwrapped.game_observations[obs])
     terminated = truncated = False
     while not terminated and not truncated:
         # print(".", end="")
         rand_action = env.action_space.sample()
         print(env.unwrapped.game_actions[rand_action], end=", ")
         obs, reward, terminated, truncated, info = env.step(rand_action)
-        print(info["debug"], f"{reward=}", obs)
+        print(info["debug"], f"{reward=}", env.unwrapped.game_observations[obs])
 
     print(f"{terminated=}, {truncated=}")
