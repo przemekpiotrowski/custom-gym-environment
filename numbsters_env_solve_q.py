@@ -1,0 +1,74 @@
+import gymnasium as gym
+from gymnasium.wrappers import TimeLimit
+
+import numpy as np
+import pickle
+import random
+import matplotlib.pyplot as plt
+
+import numbsters_env  # noqa
+
+
+def run_q(episodes, is_training=True, render=False):
+    env = gym.make("numbsters-v0", render_mode="human" if render else None)
+    env = TimeLimit(env, max_episode_steps=15)
+
+    if is_training:
+        q = np.zeros((env.observation_space.n, env.action_space.n))
+    else:
+        f = open("numbsters_solution.pkl", "rb")
+        q = pickle.load(f)
+        f.close()
+
+    learning_rate_a = 0.9
+    discount_factor_g = 0.9
+    epsilon = 1
+
+    rewards_per_episode = np.zeros(episodes)
+
+    for i in range(episodes):
+        if not i % 10_000:
+            print(f"Episode {i}")
+
+        rewards = 0
+
+        state, _ = env.reset()
+        terminated = truncated = False
+        while not terminated and not truncated:
+            if is_training and random.random() < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = np.argmax(q[state, :])
+
+            new_state, reward, terminated, truncated, _ = env.step(action)
+
+            if is_training:
+                q[state, action] = q[state, action] + learning_rate_a * (
+                    reward + discount_factor_g * np.max(q[new_state, :]) - q[state, action]
+                )
+
+            state = new_state
+
+            rewards += reward
+        epsilon = max(epsilon - 1 / episodes, 0)
+
+        rewards_per_episode[i] = rewards
+
+    env.close()
+
+    if is_training:
+        sum_rewards = np.zeros(episodes)
+        for t in range(episodes):
+            sum_rewards[t] = np.sum(rewards_per_episode[max(0, t - 100) : (t + 1)])
+        plt.plot(sum_rewards)
+        plt.savefig("numbsters_solution.png")
+
+    if is_training:
+        f = open("numbsters_solution.pkl", "wb")
+        pickle.dump(q, f)
+        f.close()
+
+
+if __name__ == "__main__":
+    run_q(100_000, is_training=True, render=False)
+    run_q(1, is_training=False, render=True)

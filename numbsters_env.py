@@ -34,7 +34,7 @@ class NumbstersEnv(gym.Env):
                 self.game_actions.append(f"swap_{pos_1+1}_{pos_2+1}")
         self.action_space = spaces.Discrete(len(self.game_actions))
 
-        self.game_observations = generate_os0(self.game_deck)
+        self.game_observations = generate_os0(self.game_deck, self.game_stack_len)
         self.observation_space = spaces.Discrete(len(self.game_observations))
 
         self.game = None
@@ -42,16 +42,22 @@ class NumbstersEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        self.game = numbsters.Game(deck=self.game_deck.copy())
+        self.game = numbsters.Game(deck=create_deck(seed=seed))
         self.game.setup()
         self.game.draw()
 
         obs = self.game_observations.index(stack2os(self.game.stack, self.game_stack_len))
         info = {}
 
+        if self.render_mode == "human":
+            print(self.game_observations[obs])
+
         return obs, info
 
     def step(self, action):
+        if self.render_mode == "human":
+            print(self.game_actions[action], end=" ")
+
         game_action_fn, pos_from, pos_to = self.game_actions[action].split("_")
         game_action_ok = getattr(self.game, game_action_fn)(int(pos_from), int(pos_to))
 
@@ -88,6 +94,9 @@ class NumbstersEnv(gym.Env):
         info = {"debug": debug}
         obs = self.game_observations.index(stack2os(self.game.stack, self.game_stack_len))
 
+        if self.render_mode == "human":
+            print(info["debug"], f"{reward=}", self.game_observations[obs])
+
         return obs, reward, terminated, truncated, info
 
     def render(self):
@@ -102,13 +111,13 @@ if __name__ == "__main__":
     print("*** env check end ***")
 
     obs, _ = env.reset()
-    print(env.unwrapped.game_observations[obs])
+    # print(env.unwrapped.game_observations[obs])
     terminated = truncated = False
     while not terminated and not truncated:
         # print(".", end="")
         rand_action = env.action_space.sample()
-        print(env.unwrapped.game_actions[rand_action], end=", ")
+        # print(env.unwrapped.game_actions[rand_action], end=", ")
         obs, reward, terminated, truncated, info = env.step(rand_action)
-        print(info["debug"], f"{reward=}", env.unwrapped.game_observations[obs])
+        # print(info["debug"], f"{reward=}", env.unwrapped.game_observations[obs])
 
     print(f"{terminated=}, {truncated=}")
