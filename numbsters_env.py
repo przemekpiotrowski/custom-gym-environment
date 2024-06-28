@@ -68,28 +68,27 @@ class NumbstersEnv(gym.Env):
         debug = []
         if game_action_ok:
             debug.append("action ok")
-
-            no_eating = False
-            if self.game.eat():
-                debug.append("eating ok")
-            else:
-                debug.append("no eating")
-                no_eating = True
-
-            if no_eating or self.game.ends():
-                debug.append("game ends")
-
-                terminated = True
-                if self.game.winning_condition():
-                    reward = 10
-                else:
-                    reward = -10
-            else:
-                debug.append("game continues")
-                self.game.draw()
         else:
             debug.append("invalid action")
-            reward = -1
+
+        no_eating = False
+        if self.game.eat():
+            debug.append("eating ok")
+        else:
+            debug.append("no eating")
+            no_eating = True
+
+        if not game_action_ok or no_eating or self.game.ends():
+            debug.append("game ends")
+
+            terminated = True
+            if self.game.winning_condition():
+                reward = 10
+            else:
+                reward = -10
+        else:
+            debug.append("game continues")
+            self.game.draw()
 
         info = {"debug": debug}
         obs = self.game_observations.index(stack2os(self.game.stack, self.game_stack_len))
@@ -105,7 +104,7 @@ class NumbstersEnv(gym.Env):
 
 if __name__ == "__main__":
     env = gym.make("numbsters-v0", render_mode="human")
-    env = TimeLimit(env, max_episode_steps=5)
+    env = TimeLimit(env, max_episode_steps=20)
 
     check_env(env.unwrapped)
     print("*** env check end ***")

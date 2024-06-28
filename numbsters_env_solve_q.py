@@ -11,7 +11,7 @@ import numbsters_env  # noqa
 
 def run_q(episodes, is_training=True, render=False, checkpoint=0, continue_with_pkl=False):
     env = gym.make("numbsters-v0", render_mode="human" if render else None)
-    env = TimeLimit(env, max_episode_steps=15)
+    env = TimeLimit(env, max_episode_steps=20)
 
     if is_training and continue_with_pkl:
         f = open("numbsters_solution.pkl", "rb")
