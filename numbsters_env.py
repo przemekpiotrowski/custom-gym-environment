@@ -10,7 +10,7 @@ import src.numbsters.game as numbsters
 
 from src.numbsters.cards import create_deck
 from src.numbsters.observations_space import stack2os
-from src.numbsters.action_space import generate_as2
+from src.numbsters.action_space import generate_as2s
 
 register(
     id="numbsters-v0",
@@ -27,7 +27,7 @@ class NumbstersEnv(gym.Env):
         self.render_mode = render_mode
 
         self.game_stack_len = self.stack_size
-        self.game_actions = generate_as2(self.game_stack_len)
+        self.game_actions = generate_as2s(self.game_stack_len)
         self.action_space = spaces.Discrete(len(self.game_actions))
 
         self.observation_space = spaces.Box(
