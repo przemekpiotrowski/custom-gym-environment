@@ -9,7 +9,8 @@ import numpy as np
 import src.numbsters.game as numbsters
 
 from src.numbsters.cards import create_deck
-from src.numbsters.observations_space import generate_os0, stack2os
+from src.numbsters.observations_space import stack2os
+from src.numbsters.action_space import generate_as2
 
 register(
     id="numbsters-v0",
@@ -20,37 +21,33 @@ register(
 class NumbstersEnv(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 1}
 
-    def __init__(self, render_mode=None):
+    def __init__(self, stack_size=8, deck_size=18, render_mode=None):
+        self.stack_size = stack_size
+        self.deck_size = deck_size
         self.render_mode = render_mode
 
-        self.game_deck = create_deck()
-        self.game_stack_len = min(len(self.game_deck), 8)
-        self.game_actions = []
-        for pos_from in range(self.game_stack_len):
-            for pos_to in range(self.game_stack_len + 1):
-                self.game_actions.append(f"move_{pos_from+1}_{pos_to}")
-        for pos_1 in range(self.game_stack_len):
-            for pos_2 in range(self.game_stack_len):
-                self.game_actions.append(f"swap_{pos_1+1}_{pos_2+1}")
+        self.game_stack_len = self.stack_size
+        self.game_actions = generate_as2(self.game_stack_len)
         self.action_space = spaces.Discrete(len(self.game_actions))
 
-        self.game_observations = generate_os0(self.game_deck, self.game_stack_len)
-        self.observation_space = spaces.Discrete(len(self.game_observations))
+        self.observation_space = spaces.Box(
+            low=0, high=max(8, self.deck_size), shape=(self.game_stack_len,), dtype=np.uint8
+        )
 
         self.game = None
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        self.game = numbsters.Game(deck=create_deck(seed=seed))
-        self.game.setup()
+        self.game = numbsters.Game(deck=create_deck(self.deck_size, self.stack_size, seed=seed))
+        self.game.setup(self.stack_size - 1)
         self.game.draw()
 
-        obs = self.game_observations.index(stack2os(self.game.stack, self.game_stack_len))
+        obs = stack2os(self.game.stack, self.game_stack_len)
         info = {}
 
         if self.render_mode == "human":
-            print(self.game_observations[obs])
+            print(obs)
 
         return obs, info
 
@@ -91,10 +88,10 @@ class NumbstersEnv(gym.Env):
             self.game.draw()
 
         info = {"debug": debug}
-        obs = self.game_observations.index(stack2os(self.game.stack, self.game_stack_len))
+        obs = stack2os(self.game.stack, self.game_stack_len)
 
         if self.render_mode == "human":
-            print(info["debug"], f"{reward=}", self.game_observations[obs])
+            print(info["debug"], f"{reward=}", obs)
 
         return obs, reward, terminated, truncated, info
 
@@ -103,7 +100,7 @@ class NumbstersEnv(gym.Env):
 
 
 if __name__ == "__main__":
-    env = gym.make("numbsters-v0", render_mode="human")
+    env = gym.make("numbsters-v0", stack_size=8, deck_size=9, render_mode="human")
     env = TimeLimit(env, max_episode_steps=20)
 
     check_env(env.unwrapped)
