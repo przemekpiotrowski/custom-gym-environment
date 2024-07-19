@@ -9,7 +9,7 @@ import numpy as np
 import src.numbsters.game as numbsters
 
 from src.numbsters.cards import create_deck
-from src.numbsters.observations_space import stack2os
+from src.numbsters.observation_space import observation_space_len, stack2os, os2stack
 from src.numbsters.action_space import generate_as2s
 
 register(
@@ -30,9 +30,7 @@ class NumbstersEnv(gym.Env):
         self.game_actions = generate_as2s(self.game_stack_len)
         self.action_space = spaces.Discrete(len(self.game_actions))
 
-        self.observation_space = spaces.Box(
-            low=0, high=max(8, self.deck_size), shape=(self.game_stack_len,), dtype=np.uint8
-        )
+        self.observation_space = spaces.Discrete(observation_space_len(self.stack_size, self.deck_size))
 
         self.game = None
 
@@ -47,7 +45,7 @@ class NumbstersEnv(gym.Env):
         info = {}
 
         if self.render_mode == "human":
-            print(obs)
+            print(os2stack(obs))
 
         return obs, info
 
@@ -91,7 +89,7 @@ class NumbstersEnv(gym.Env):
         obs = stack2os(self.game.stack, self.game_stack_len)
 
         if self.render_mode == "human":
-            print(info["debug"], f"{reward=}", obs)
+            print(info["debug"], f"{reward=}", os2stack(obs))
 
         return obs, reward, terminated, truncated, info
 
@@ -100,7 +98,7 @@ class NumbstersEnv(gym.Env):
 
 
 if __name__ == "__main__":
-    env = gym.make("numbsters-v0", stack_size=8, deck_size=9, render_mode="human")
+    env = gym.make("numbsters-v0", stack_size=8, deck_size=18, render_mode="human")
     env = TimeLimit(env, max_episode_steps=20)
 
     check_env(env.unwrapped)

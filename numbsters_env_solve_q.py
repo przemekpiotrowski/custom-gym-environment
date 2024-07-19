@@ -2,7 +2,6 @@ import gymnasium as gym
 from gymnasium.wrappers import TimeLimit
 
 import numpy as np
-import pickle
 import random
 import matplotlib.pyplot as plt
 
@@ -13,17 +12,13 @@ def run_q(episodes, is_training=True, stack_size=8, deck_size=18, render=False, 
     env = gym.make("numbsters-v0", stack_size=stack_size, deck_size=deck_size, render_mode="human" if render else None)
     env = TimeLimit(env, max_episode_steps=20)
 
-    solution_filename = f"q_solutions/numbsters_{stack_size}x{deck_size}"
+    solution_filename = f"q_solutions/numbsters-{stack_size}x{deck_size}"
     if is_training and continue_with_pkl:
-        f = open(solution_filename + ".pkl", "rb")
-        q = pickle.load(f)
-        f.close()
+        q = load_q(solution_filename)
     elif is_training:
-        q = np.zeros((deck_size + 1,) * stack_size + (env.action_space.n,), dtype=np.float16)
+        q = np.zeros((env.observation_space.n, env.action_space.n), dtype=np.float16)
     else:
-        f = open(solution_filename + ".pkl", "rb")
-        q = pickle.load(f)
-        f.close()
+        q = load_q(solution_filename)
 
     learning_rate_a = 0.9
     discount_factor_g = 0.9
@@ -43,16 +38,13 @@ def run_q(episodes, is_training=True, stack_size=8, deck_size=18, render=False, 
             if is_training and random.random() < epsilon:
                 action = env.action_space.sample()
             else:
-                q_state_idx = tuple(state)
-                action = np.argmax(q[q_state_idx])
+                action = np.argmax(q[state, :])
 
             new_state, reward, terminated, truncated, _ = env.step(action)
 
             if is_training:
-                q_state_action_idx = tuple(state) + (action,)
-                q_new_state_idx = tuple(new_state)
-                q[q_state_action_idx] = q[q_state_action_idx] + learning_rate_a * (
-                    reward + discount_factor_g * np.max(q[q_new_state_idx]) - q[q_state_action_idx]
+                q[state, action] = q[state, action] + learning_rate_a * (
+                    reward + discount_factor_g * np.max(q[new_state, :]) - q[state, action]
                 )
 
             state = new_state
@@ -66,7 +58,7 @@ def run_q(episodes, is_training=True, stack_size=8, deck_size=18, render=False, 
 
         if is_training and checkpoint and i % checkpoint == 0:
             save_png(episodes, rewards_per_episode, solution_filename)
-            save_q(q, solution_filename)
+            # save_q(q, solution_filename)
 
     env.close()
 
@@ -75,18 +67,24 @@ def run_q(episodes, is_training=True, stack_size=8, deck_size=18, render=False, 
         save_q(q, solution_filename)
 
 
-def save_png(episodes, rewards_per_episode, solution_filename):
+def save_png(episodes, rewards_per_episode, cache_filename):
     sum_rewards = np.zeros(episodes, dtype=np.int16)
     for t in range(episodes):
         sum_rewards[t] = np.sum(rewards_per_episode[max(0, t - 100) : (t + 1)])
     plt.plot(sum_rewards)
-    plt.savefig(solution_filename + ".png")
+    plt.savefig(cache_filename + ".png")
 
 
-def save_q(q, solution_filename):
-    f = open(solution_filename + ".pkl", "wb")
-    pickle.dump(q, f)
-    f.close()
+def save_q(q, cache_filename):
+    print("Saving the Q-table...")
+    np.save(cache_filename + ".npy", q, allow_pickle=False)
+    # np.savetxt(cache_filename + ".txt.gz", q)
+
+
+def load_q(cache_filename):
+    print("Loading the Q-table...")
+    return np.load(cache_filename + ".npy", allow_pickle=False)
+    # return np.loadtxt(cache_filename + ".txt.gz", dtype=np.float16)
 
 
 if __name__ == "__main__":
